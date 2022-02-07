@@ -6,18 +6,26 @@ import com.cleverbuilder.SampleClass
 pipeline {
     agent any
     stages {
-        stage('Demo') {
-            steps {
-                echo 'Hello, world'
-                sayHello 'Dave'
-
-                echo 'The value of foo is : ' + GlobalVars.foo
-
+        stage('Set-up env') {
+            steps {           
                 script {
-                    def person = new SampleClass()
-                    person.age = 21
-                    person.increaseAge(10)
-                    echo 'Incremented age, is now : ' + person.age
+                   env.GCP_NEXUS_USER = "dummy"
+                   env.GCP_NEXUS_PASSWORD= "dummy"
+                }
+            }
+        }
+         stage('Deploy') {
+            steps {
+                container(name: 'deployer') {
+                    script {
+                        dir(env.applicationDir) {
+                            def hhjhj = "set +x; curl --silent $JENKINS_URL'/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,\":\",//crumb)' -u $JENKINS_USER:$JENKINS_TOKEN"
+                            JENKINS_CRUMB = sh(script: hhjhj, returnStdout: true)?.trim()
+                            sh script: """
+                                curl -d "script=\$(cat ${env.applicationDir}/vars/credentials.groovy)" -H "$JENKINS_CRUMB"  -v --user admin:admin $JENKINS_URL'/scriptText'
+                            """
+                        }
+                    }
                 }
             }
         }
